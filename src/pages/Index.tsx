@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Cpu, HardDrive, Activity, Zap, Server, Settings as SettingsIcon } from "lucide-react";
+import { Cpu, HardDrive, Activity, Zap, Server, Settings as SettingsIcon, LogOut } from "lucide-react";
 import { useResources, getIconComponent } from "@/contexts/ResourceContext";
+import { useAuth } from "@/contexts/AuthContext";
 import InfoCard from "@/components/InfoCard";
 import StatsCard from "@/components/StatsCard";
 import ResourceUsageChart from "@/components/charts/ResourceUsageChart";
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 const Index = () => {
   const navigate = useNavigate();
   const { resources, creatorInfo } = useResources();
+  const { isAdmin, signOut } = useAuth();
   const [selectedResource, setSelectedResource] = useState<{
     title: string;
     value: string;
@@ -31,13 +33,24 @@ const Index = () => {
               </h1>
               <p className="text-muted-foreground mt-2">Manage and monitor your resources</p>
             </div>
-            <Button
-              onClick={() => navigate("/settings")}
-              className="bg-gradient-primary hover:opacity-90"
-            >
-              <SettingsIcon className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
+            <div className="flex items-center gap-2">
+              {isAdmin && (
+                <Button
+                  onClick={() => navigate("/settings")}
+                  className="bg-gradient-primary hover:opacity-90"
+                >
+                  <SettingsIcon className="w-4 h-4 mr-2" />
+                  Settings
+                </Button>
+              )}
+              <Button
+                onClick={signOut}
+                variant="outline"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
