@@ -12,6 +12,8 @@ export interface Resource {
 interface ResourceContextType {
   resources: Resource[];
   updateResource: (id: string, updates: Partial<Resource>) => void;
+  addResource: (resource: Omit<Resource, "id">) => void;
+  deleteResource: (id: string) => void;
   creatorInfo: {
     name: string;
     tagline: string;
@@ -135,12 +137,24 @@ export const ResourceProvider = ({ children }: { children: ReactNode }) => {
     );
   };
 
+  const addResource = (resource: Omit<Resource, "id">) => {
+    const newResource: Resource = {
+      ...resource,
+      id: Date.now().toString(),
+    };
+    setResources(prev => [...prev, newResource]);
+  };
+
+  const deleteResource = (id: string) => {
+    setResources(prev => prev.filter(resource => resource.id !== id));
+  };
+
   const updateCreatorInfo = (info: { name: string; tagline: string }) => {
     setCreatorInfo(info);
   };
 
   return (
-    <ResourceContext.Provider value={{ resources, updateResource, creatorInfo, updateCreatorInfo }}>
+    <ResourceContext.Provider value={{ resources, updateResource, addResource, deleteResource, creatorInfo, updateCreatorInfo }}>
       {children}
     </ResourceContext.Provider>
   );
