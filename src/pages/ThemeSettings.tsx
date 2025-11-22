@@ -48,7 +48,7 @@ const ThemeSettings = () => {
     } else if (data) {
       const themeColors: ThemeColor[] = data.map((item) => ({
         key: item.config_key,
-        value: typeof item.config_value === 'string' ? JSON.parse(item.config_value) : String(item.config_value),
+        value: typeof item.config_value === "string" ? item.config_value : String(item.config_value),
         label: formatLabel(item.config_key),
         description: getDescription(item.config_key),
       }));
@@ -94,7 +94,7 @@ const ThemeSettings = () => {
         const { error } = await supabase
           .from("theme_config")
           .update({
-            config_value: JSON.stringify(color.value),
+            config_value: color.value,
             updated_at: new Date().toISOString(),
           })
           .eq("config_key", color.key);
