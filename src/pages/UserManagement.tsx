@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Shield, ShieldOff, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +23,7 @@ const UserManagement = () => {
   const { toast } = useToast();
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -120,6 +122,81 @@ const UserManagement = () => {
     }
   };
 
+  const toggleUserSelection = (userId: string) => {
+    const newSelection = new Set(selectedUsers);
+    if (newSelection.has(userId)) {
+      newSelection.delete(userId);
+    } else {
+      newSelection.add(userId);
+    }
+    setSelectedUsers(newSelection);
+  };
+
+  const toggleAllUsers = () => {
+    if (selectedUsers.size === users.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(users.map((u) => u.id)));
+    }
+  };
+
+  const bulkToggleRole = async (role: "admin" | "user", action: "assign" | "revoke") => {
+    if (selectedUsers.size === 0) {
+      toast({
+        title: "No Users Selected",
+        description: "Please select users to perform bulk operations",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const userIds = Array.from(selectedUsers);
+
+      if (action === "assign") {
+        // Bulk assign role
+        const insertData = userIds.map((userId) => ({
+          user_id: userId,
+          role,
+        }));
+
+        const { error } = await supabase
+          .from("user_roles")
+          .upsert(insertData, { onConflict: "user_id,role" });
+
+        if (error) throw error;
+
+        toast({
+          title: "Roles Assigned",
+          description: `${role} role assigned to ${userIds.length} user(s)`,
+        });
+      } else {
+        // Bulk revoke role
+        const { error } = await supabase
+          .from("user_roles")
+          .delete()
+          .in("user_id", userIds)
+          .eq("role", role);
+
+        if (error) throw error;
+
+        toast({
+          title: "Roles Revoked",
+          description: `${role} role revoked from ${userIds.length} user(s)`,
+        });
+      }
+
+      setSelectedUsers(new Set());
+      fetchUsers();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to perform bulk operation",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (authLoading || !isAdmin) {
     return null;
   }
@@ -156,6 +233,42 @@ const UserManagement = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12">
         <Card className="p-6 bg-gradient-card border-border/50">
+          {/* Bulk Actions */}
+          {selectedUsers.size > 0 && (
+            <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">
+                  {selectedUsers.size} user(s) selected
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => bulkToggleRole("admin", "assign")}
+                    className="bg-gradient-primary hover:opacity-90"
+                  >
+                    <Shield className="w-4 h-4 mr-1" />
+                    Make Admin
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => bulkToggleRole("admin", "revoke")}
+                  >
+                    <ShieldOff className="w-4 h-4 mr-1" />
+                    Revoke Admin
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setSelectedUsers(new Set())}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
@@ -165,6 +278,12 @@ const UserManagement = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={selectedUsers.size === users.length && users.length > 0}
+                        onCheckedChange={toggleAllUsers}
+                      />
+                    </TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Joined</TableHead>
                     <TableHead>Roles</TableHead>
@@ -174,6 +293,12 @@ const UserManagement = () => {
                 <TableBody>
                   {users.map((user) => (
                     <TableRow key={user.id}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedUsers.has(user.id)}
+                          onCheckedChange={() => toggleUserSelection(user.id)}
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{user.email}</TableCell>
                       <TableCell>
                         {new Date(user.created_at).toLocaleDateString()}
@@ -219,7 +344,7 @@ const UserManagement = () => {
                   ))}
                   {users.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-12 text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center py-12 text-muted-foreground">
                         No users found
                       </TableCell>
                     </TableRow>
