@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save, User, Palette } from "lucide-react";
+import { ArrowLeft, Save, User, Palette, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
@@ -112,26 +112,47 @@ const Settings = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12 space-y-12 max-w-4xl">
-        {/* Theme Settings - Admin Only */}
+        {/* Admin Only Sections */}
         {isAdmin && (
-          <section className="animate-fade-in">
-            <Card className="p-6 bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/theme-settings")}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-lg bg-gradient-primary">
-                    <Palette className="w-6 h-6 text-primary-foreground" />
+          <>
+            <section className="animate-fade-in">
+              <Card className="p-6 bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/user-management")}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-lg bg-gradient-primary">
+                      <Users className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground">User Management</h2>
+                      <p className="text-muted-foreground mt-1">Manage users and assign roles</p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-bold text-foreground">Theme Settings</h2>
-                    <p className="text-muted-foreground mt-1">Customize your app's color scheme</p>
-                  </div>
+                  <Button variant="outline">
+                    Manage
+                  </Button>
                 </div>
-                <Button variant="outline">
-                  Configure
-                </Button>
-              </div>
-            </Card>
-          </section>
+              </Card>
+            </section>
+
+            <section className="animate-fade-in">
+              <Card className="p-6 bg-gradient-card border-border/50 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/theme-settings")}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-lg bg-gradient-primary">
+                      <Palette className="w-6 h-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-foreground">Theme Settings</h2>
+                      <p className="text-muted-foreground mt-1">Customize your app's color scheme</p>
+                    </div>
+                  </div>
+                  <Button variant="outline">
+                    Configure
+                  </Button>
+                </div>
+              </Card>
+            </section>
+          </>
         )}
 
         {/* Creator Info Section */}
