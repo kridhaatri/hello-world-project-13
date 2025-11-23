@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Cpu, HardDrive, Activity, Zap, Server, Settings as SettingsIcon, LogOut } from "lucide-react";
+import { Cpu, HardDrive, Activity, Zap, Server, Settings as SettingsIcon, LogOut, User } from "lucide-react";
 import { useResources, getIconComponent } from "@/contexts/ResourceContext";
 import { useAuth } from "@/contexts/AuthContext";
 import InfoCard from "@/components/InfoCard";
@@ -34,6 +34,13 @@ const Index = () => {
               <p className="text-muted-foreground mt-2">Manage and monitor your resources</p>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                onClick={() => navigate("/profile")}
+                variant="outline"
+              >
+                <User className="w-4 h-4 mr-2" />
+                Profile
+              </Button>
               {isAdmin && (
                 <Button
                   onClick={() => navigate("/settings")}
