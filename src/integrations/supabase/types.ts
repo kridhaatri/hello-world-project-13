@@ -16,26 +16,17 @@ export type Database = {
     Tables: {
       profiles: {
         Row: {
-          avatar_url: string | null
-          bio: string | null
           created_at: string | null
-          display_name: string | null
           email: string | null
           id: string
         }
         Insert: {
-          avatar_url?: string | null
-          bio?: string | null
           created_at?: string | null
-          display_name?: string | null
           email?: string | null
           id: string
         }
         Update: {
-          avatar_url?: string | null
-          bio?: string | null
           created_at?: string | null
-          display_name?: string | null
           email?: string | null
           id?: string
         }
@@ -44,24 +35,24 @@ export type Database = {
       theme_config: {
         Row: {
           config_key: string
-          config_value: string
-          created_at: string
+          config_value: Json
           id: string
-          updated_at: string
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           config_key: string
-          config_value: string
-          created_at?: string
+          config_value: Json
           id?: string
-          updated_at?: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           config_key?: string
-          config_value?: string
-          created_at?: string
+          config_value?: Json
           id?: string
-          updated_at?: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -70,29 +61,21 @@ export type Database = {
           created_at: string | null
           id: string
           role: Database["public"]["Enums"]["app_role"]
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string | null
+          user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "user_roles_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
