@@ -1,11 +1,17 @@
-// API Client for Express Backend
-// Replace all Supabase calls with these API methods
+// API Client with Retry Logic and Error Handling
+import { API_CONFIG } from '@/config/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = API_CONFIG.baseUrl;
 
 interface ApiError {
   error: string;
   errors?: Array<{ msg: string; param: string }>;
+}
+
+interface RetryOptions {
+  maxRetries?: number;
+  retryDelay?: number;
+  shouldRetry?: (error: Error) => boolean;
 }
 
 interface User {
@@ -43,29 +49,90 @@ class ApiClient {
     return this.token;
   }
 
+  private async sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private shouldRetryError(error: Error): boolean {
+    // Retry on network errors or 5xx server errors
+    const networkErrors = [
+      'Failed to fetch',
+      'NetworkError',
+      'Network request failed',
+      'timeout',
+    ];
+    return networkErrors.some(msg => error.message.includes(msg));
+  }
+
+  private async requestWithRetry<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    retryOptions: RetryOptions = {}
+  ): Promise<T> {
+    const {
+      maxRetries = API_CONFIG.maxRetries,
+      retryDelay = API_CONFIG.retryDelay,
+      shouldRetry = this.shouldRetryError,
+    } = retryOptions;
+
+    let lastError: Error;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json',
+          ...(this.token && { Authorization: `Bearer ${this.token}` }),
+          ...options.headers,
+        };
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
+
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          ...options,
+          headers,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const error: ApiError = await response.json().catch(() => ({
+            error: 'Request failed',
+          }));
+          
+          // Don't retry 4xx errors (client errors)
+          if (response.status >= 400 && response.status < 500) {
+            throw new Error(error.error || 'API request failed');
+          }
+          
+          throw new Error(error.error || 'API request failed');
+        }
+
+        return response.json();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+        
+        // If it's the last attempt or shouldn't retry, throw
+        if (attempt === maxRetries || !shouldRetry(lastError)) {
+          throw lastError;
+        }
+
+        // Wait before retrying with exponential backoff
+        const delay = retryDelay * Math.pow(2, attempt);
+        console.warn(`Request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
+        await this.sleep(delay);
+      }
+    }
+
+    throw lastError!;
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-      ...(this.token && { Authorization: `Bearer ${this.token}` }),
-      ...options.headers,
-    };
-
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
-
-    if (!response.ok) {
-      const error: ApiError = await response.json().catch(() => ({
-        error: 'Request failed',
-      }));
-      throw new Error(error.error || 'API request failed');
-    }
-
-    return response.json();
+    return this.requestWithRetry<T>(endpoint, options);
   }
 
   // ==================== Auth Endpoints ====================
